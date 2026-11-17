@@ -1,0 +1,53 @@
+name: Dev container check
+
+# Builds the dev container the way Codespaces does and replays every lesson in it.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer-check.yml"
+  pull_request:
+    paths:
+      - ".devcontainer/**"
+      - ".github/workflows/devcontainer-check.yml"
+  schedule:
+    - cron: "23 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pinned:
+    name: Pinned relate-db
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the container and replay every lesson
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: lab-check --full
+
+  latest:
+    # Lesson 1 tells students to run `pip install relate-db` in a new virtual
+    # environment, which installs the newest release. This job catches a new
+    # release that breaks a lesson.
+    name: Latest relate-db
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install relate-db the way Lesson 1 does, then replay every lesson
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: |
+            set -e
+            cd "$(mktemp -d)"
+            python3 -m venv .venv
+            . .venv/bin/activate
+            pip install --quiet relate-db pandas pyarrow
+            python -c "import relate; print(relate.__version__)"
+            lab-check --full

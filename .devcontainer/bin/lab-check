@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""lab-check: confirm the Relate Python lab works.
+
+  lab-check          check Python, the relate package and the lab folder
+  lab-check --full   also replay every lesson and challenge in a scratch folder
+
+The check uses the `python` on your PATH. If you activated a virtual
+environment, it tests the packages in that environment.
+The full check works in a temporary folder and never touches your lab files.
+Exit code 0 means every check passed.
+"""
+import ast
+import contextlib
+import importlib.util
+import io
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+SHARE = Path(os.environ.get("LAB_SHARE", "/usr/local/share/relate-lab"))
+CHECKS_FILE = SHARE / "lesson-checks.json"
+PINNED_FILE = SHARE / "requirements.txt"
+
+passed = 0
+failed = 0
+skipped = 0
+
+
+def ok(name):
+    global passed
+    passed += 1
+    print(f"  ok    {name}")
+
+
+def fail(name, detail=""):
+    global failed
+    failed += 1
+    print(f"  FAIL  {name}")
+    for line in detail.rstrip().splitlines():
+        print(f"          {line}")
+
+
+def note(text):
+    print(f"  note  {text}")
+
+
+def pinned_version(package):
+    if not PINNED_FILE.exists():
+        return None
+    for line in PINNED_FILE.read_text().splitlines():
+        if line.startswith(f"{package}=="):
+            return line.split("==")[1].split()[0]
+    return None
+
+
+def quick_checks():
+    print("\nPython")
+    version = sys.version_info
+    if version >= (3, 9):
+        ok(f"Python {version.major}.{version.minor}.{version.micro} ({sys.executable})")
+    else:
+        fail("Python 3.9 or later", f"found {sys.version.split()[0]}")
+
+    if importlib.util.find_spec("relate") is None:
+        fail(
+            "the relate package is installed",
+            "This Python cannot import relate.\n"
+            "If you are in a virtual environment, run: pip install relate-db\n"
+            "Or leave it with: deactivate",
+        )
+        return False
+    import relate
+
+    ok(f"relate {relate.__version__} imports")
+    pinned = pinned_version("relate-db")
+    if pinned and relate.__version__ != pinned:
+        note(f"you are running relate-db {relate.__version__}. This lab was tested with {pinned}.")
+        note("That is fine. To go back, run: deactivate")
+
+    try:
+        with relate.connect(":memory:") as conn:
+            value = conn.execute("RETURN 1 AS ok").single()["ok"]
+        if value == 1:
+            ok("relate runs a query in memory")
+        else:
+            fail("relate runs a query in memory", f"expected 1, got {value!r}")
+    except Exception as error:  # noqa: BLE001 - report anything that goes wrong
+        fail("relate runs a query in memory", f"{type(error).__name__}: {error}")
+
+    if importlib.util.find_spec("pandas") and importlib.util.find_spec("pyarrow"):
+        ok("pandas and pyarrow are installed (optional steps)")
+    else:
+        note("pandas or pyarrow is missing here. Only the optional table and Parquet steps need them.")
+        note("To add them, run: pip install pandas pyarrow")
+
+    if os.environ.get("RELATE_LOAD_CSV_DIR"):
+        note("RELATE_LOAD_CSV_DIR is set in this terminal. The lessons set it inside each script.")
+
+    print("\nLab folder")
+    lab_dir = os.environ.get("LAB_DIR", "")
+    if lab_dir and os.path.isdir(lab_dir) and os.access(lab_dir, os.W_OK):
+        ok(f"lab folder exists and is writable ({lab_dir})")
+    else:
+        fail("lab folder exists and is writable", f"LAB_DIR='{lab_dir}'. Run: lab-reset --init")
+    return True
+
+
+def run_repl(namespace, source):
+    """Run code the way the interactive prompt does: echo bare expressions."""
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        for node in ast.parse(source).body:
+            if isinstance(node, ast.Expr):
+                value = eval(compile(ast.Expression(node.value), "<lesson>", "eval"), namespace)
+                if value is not None:
+                    print(repr(value))
+            else:
+                exec(compile(ast.Module([node], []), "<lesson>", "exec"), namespace)
+    return output.getvalue()
+
+
+def run_step(step, cwd, namespaces):
+    """Run one lesson step. Returns (output, error_text_or_None)."""
+    kind = step["kind"]
+    if kind == "file":
+        (cwd / step["name"]).write_text(step["body"])
+        return "", None
+    if kind == "bash":
+        env = dict(os.environ)
+        env.pop("RELATE_LOAD_CSV_DIR", None)
+        # `python` must be the interpreter running this check.
+        env["PATH"] = f"{Path(sys.executable).parent}{os.pathsep}{env.get('PATH', '')}"
+        done = subprocess.run(["bash", "-c", step["body"]], cwd=cwd, env=env, capture_output=True, text=True)
+        output = done.stdout + done.stderr
+        return output, (None if done.returncode == 0 else f"exit code {done.returncode}\n{output}")
+    if kind == "repl":
+        namespace = namespaces.setdefault(step["lesson"], {"__name__": "__console__"})
+        previous = os.getcwd()
+        os.chdir(cwd)
+        try:
+            return run_repl(namespace, step["body"].replace("exit()", "pass")), None
+        except Exception as error:  # noqa: BLE001
+            return "", f"{type(error).__name__}: {error}"
+        finally:
+            os.chdir(previous)
+    return "", f"unknown step kind: {kind}"
+
+
+def full_checks():
+    global skipped
+    if not CHECKS_FILE.exists():
+        fail("lesson checks are installed", f"{CHECKS_FILE} is missing. Rebuild the container.")
+        return
+    data = json.loads(CHECKS_FILE.read_text())
+    have = {name: importlib.util.find_spec(name) is not None for name in ("pandas", "pyarrow")}
+    work = Path(tempfile.mkdtemp(prefix="lab-check-"))
+    namespaces = {}
+    current = None
+    try:
+        for step in data["steps"]:
+            if step["lesson"] != current:
+                current = step["lesson"]
+                print(f"\n{step['title']}")
+            cwd = work / step["dir"]
+            cwd.mkdir(parents=True, exist_ok=True)
+            missing = [name for name in step.get("needs", []) if not have.get(name)]
+            if missing:
+                skipped += 1
+                if step["kind"] != "file":
+                    note(f"skipped (needs {', '.join(missing)}): {step['label']}")
+                continue
+            output, error = run_step(step, cwd, namespaces)
+            if step["kind"] == "file":
+                continue
+            if error:
+                fail(step["label"], error)
+            elif step.get("expect") is not None and output.strip() != step["expect"].strip():
+                fail(step["label"], f"expected:\n{step['expect'].strip()}\nactual:\n{output.strip()}")
+            else:
+                ok(step["label"])
+    finally:
+        for namespace in namespaces.values():
+            conn = namespace.get("conn")
+            if conn is not None and hasattr(conn, "close"):
+                with contextlib.suppress(Exception):
+                    conn.close()
+        shutil.rmtree(work, ignore_errors=True)
+
+
+def main():
+    args = sys.argv[1:]
+    if any(arg in ("-h", "--help") for arg in args):
+        print(__doc__.strip())
+        return 0
+    unknown = [arg for arg in args if arg != "--full"]
+    if unknown:
+        print(f"lab-check: unknown option: {unknown[0]}", file=sys.stderr)
+        return 2
+
+    can_run = quick_checks()
+    if "--full" in args and can_run:
+        full_checks()
+
+    summary = f"\n{passed} passed, {failed} failed"
+    if skipped:
+        summary += f", {skipped} skipped"
+    print(summary)
+    if failed == 0:
+        if "--full" in args:
+            print("Every lesson and challenge runs in this environment.")
+        else:
+            print("The lab is ready. For an end-to-end test of every lesson, run: lab-check --full")
+    return 0 if failed == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

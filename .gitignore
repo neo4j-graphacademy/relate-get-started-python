@@ -1,0 +1,11 @@
+# Student work lives in lab/ and never belongs in git.
+lab/*
+!lab/.gitkeep
+
+# Relate databases, Parquet files and Python leftovers, wherever they end up.
+*.rl
+*.parquet
+__pycache__/
+.venv/
+
+.DS_Store

@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""lab-seed: rebuild team.rl so you can start a lesson without redoing the ones before it.
+
+  lab-seed 4           team.rl as Lesson 3 leaves it, ready for Lesson 4
+  lab-seed 6           team.rl as Challenge 5 leaves it, ready for Lesson 6
+  lab-seed 7           the same, ready for Lesson 7
+  lab-seed 7 --force   replace a team.rl that already exists
+
+It writes one file, team.rl, in the folder you are in. Nothing else changes.
+"""
+import os
+import sys
+
+PEOPLE = [
+    {"name": "Oskar", "role": "engineer"},
+    {"name": "Michael", "role": "engineer"},
+    {"name": "Will", "role": "maintainer"},
+]
+
+# Lesson 3: import/works_on.csv
+WORKS_ON = [
+    {"person": "Oskar", "project": "relate", "since": 2024},
+    {"person": "Michael", "project": "relate", "since": 2023},
+    {"person": "Will", "project": "relate", "since": 2021},
+]
+
+# Challenge 5: import/contributions.csv, duplicate and misspelt rows included
+CONTRIBUTIONS = [
+    {"contributor": "Oskar", "repo": "relate", "year": 2024, "language": "Rust"},
+    {"contributor": "Michael", "repo": "relate", "year": 2023, "language": "Rust"},
+    {"contributor": "Michael", "repo": "relate", "year": 2023, "language": "Rust"},
+    {"contributor": "Will", "repo": "relate", "year": 2021, "language": "Rust"},
+    {"contributor": "Michael", "repo": "opencypher-tck", "year": 2022, "language": "Gherkin"},
+    {"contributor": "Michaell", "repo": "relate", "year": 2020, "language": "Rust"},
+]
+
+
+def main():
+    args = sys.argv[1:]
+    if not args or any(arg in ("-h", "--help") for arg in args):
+        print(__doc__.strip())
+        return 0 if args else 2
+    force = "--force" in args
+    stages = [arg for arg in args if arg != "--force"]
+    if len(stages) != 1 or stages[0] not in ("4", "6", "7"):
+        print(f"lab-seed: expected 4, 6 or 7, got: {' '.join(stages) or 'nothing'}", file=sys.stderr)
+        return 2
+    stage = stages[0]
+
+    try:
+        import relate
+    except ImportError:
+        print("lab-seed: this Python cannot import relate. Run: pip install relate-db", file=sys.stderr)
+        return 1
+
+    target = "team.rl"
+    if os.path.exists(target):
+        if not force:
+            print(f"lab-seed: {os.path.abspath(target)} already exists. Add --force to replace it.", file=sys.stderr)
+            return 1
+        os.remove(target)
+
+    try:
+        with relate.connect(f"./{target}") as conn:
+            conn.execute(
+                "UNWIND $people AS person MERGE (p:Person {name: person.name}) SET p.role = person.role",
+                {"people": PEOPLE},
+            )
+            if stage == "4":
+                conn.execute(
+                    """
+                    UNWIND $rows AS row
+                    MATCH (p:Person {name: row.person})
+                    MERGE (proj:Project {name: row.project})
+                    MERGE (p)-[w:WORKS_ON]->(proj)
+                    SET w.since = row.since
+                    """,
+                    {"rows": WORKS_ON},
+                )
+            else:
+                conn.execute(
+                    """
+                    UNWIND $rows AS row
+                    MATCH (p:Person {name: row.contributor})
+                    MERGE (proj:Project {name: row.repo})
+                    SET proj.language = row.language
+                    MERGE (p)-[w:WORKS_ON]->(proj)
+                    SET w.since = row.year
+                    """,
+                    {"rows": CONTRIBUTIONS},
+                )
+    except relate.Error as error:
+        print(f"lab-seed: {error}", file=sys.stderr)
+        if "locked" in str(error):
+            print("lab-seed: another Python session has team.rl open. Leave it with exit() and try again.", file=sys.stderr)
+        return 1
+
+    print(f"lab-seed: wrote {os.path.abspath(target)}, ready for Lesson {stage}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

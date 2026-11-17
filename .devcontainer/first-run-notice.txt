@@ -1,0 +1,14 @@
+
+  Relate Python Lab is ready.
+
+  You are in the lab folder. Run the lesson commands here.
+  relate-db is already installed. Try it:
+      python -c "import relate; print(relate.__version__)"
+
+  code demo.py         create or open a file in the editor
+  lab-check            confirm the environment works
+  lab-reset            empty the lab folder and start over
+  lab-seed 4 | 6 | 7   rebuild team.rl for a later lesson
+
+  README.md has the rest.
+

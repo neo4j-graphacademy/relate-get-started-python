@@ -1,0 +1,694 @@
+{
+  "generated_from": "1-install-load-and-query",
+  "relate_db": "1.0.1",
+  "python": "3.13.18",
+  "steps": [
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python -c \"import relate; print(relate.__version__)\"",
+      "body": "python -c \"import relate; print(relate.__version__)\"\n",
+      "expect": "1.0.1\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: import relate",
+      "body": "import relate\n\nconn = relate.connect(\":memory:\")\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: cursor = conn.execute(\"\"\"",
+      "body": "cursor = conn.execute(\"\"\"\nCREATE (:Person {name: 'Oskar'})\n  -[:WORKS_ON {since: 2024}]->(:Project {name: 'relate'})\n\"\"\")\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: cursor.stats[\"nodes_created\"], cursor.stats[\"relationships_c",
+      "body": "cursor.stats[\"nodes_created\"], cursor.stats[\"relationships_created\"]\n",
+      "expect": "(2, 1)\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: cursor = conn.execute(\"\"\"",
+      "body": "cursor = conn.execute(\"\"\"\nMATCH (p:Person)-[w:WORKS_ON]->(proj:Project)\nRETURN p.name AS person, proj.name AS project, w.since AS since\n\"\"\")\ncursor.fetchall()\n",
+      "expect": "[{'person': 'Oskar', 'project': 'relate', 'since': 2024}]\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: row = conn.execute(\"\"\"",
+      "body": "row = conn.execute(\"\"\"\nMATCH (:Person)-[w:WORKS_ON]->(:Project)\nRETURN w.since AS since, valueType(w.since) AS type\n\"\"\").single()\nrow[\"type\"]\n",
+      "expect": "'INTEGER NOT NULL'\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: type(row[\"since\"])",
+      "body": "type(row[\"since\"])\n",
+      "expect": "<class 'int'>\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: conn.execute(\"RETURN valueType('relate') AS type\").single()[",
+      "body": "conn.execute(\"RETURN valueType('relate') AS type\").single()[\"type\"]\n",
+      "expect": "'STRING NOT NULL'\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: conn.close()",
+      "body": "conn.close()\nexit()\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "demo.py",
+      "label": "demo.py",
+      "body": "import relate\n\n# Write. A path that does not exist yet is created.\nwith relate.connect(\"./demo.rl\") as conn:\n    conn.execute(\"\"\"\n        CREATE (:Person {name: 'Oskar'})\n          -[:WORKS_ON {since: 2024}]->(:Project {name: 'relate'})\n    \"\"\")\n\n# Read. A read-only connection cannot change the database.\nwith relate.connect(\"./demo.rl\", read_only=True) as conn:\n    cursor = conn.execute(\"\"\"\n        MATCH (p:Person)-[w:WORKS_ON]->(proj:Project)\n        RETURN p.name AS person, proj.name AS project, w.since AS since\n    \"\"\")\n    for row in cursor:\n        print(row[\"person\"], row[\"project\"], row[\"since\"])\n"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python demo.py",
+      "body": "python demo.py\n",
+      "expect": "Oskar relate 2024\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "rows.py",
+      "label": "rows.py",
+      "body": "import json\n\nimport relate\n\nQUERY = \"\"\"\nMATCH (p:Person)-[w:WORKS_ON]->(proj:Project)\nRETURN p.name AS person, proj.name AS project, w.since AS since\n\"\"\"\n\nwith relate.connect(\"./demo.rl\", read_only=True) as conn:\n    print(conn.execute(QUERY).single())\n    print(conn.execute(QUERY).fetchall())\n    print(json.dumps(conn.execute(QUERY).fetchall()))\n"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python rows.py",
+      "body": "python rows.py\n",
+      "expect": "{'person': 'Oskar', 'project': 'relate', 'since': 2024}\n[{'person': 'Oskar', 'project': 'relate', 'since': 2024}]\n[{\"person\": \"Oskar\", \"project\": \"relate\", \"since\": 2024}]\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "table.py",
+      "label": "table.py",
+      "body": "import relate\n\nwith relate.connect(\"./demo.rl\", read_only=True) as conn:\n    df = conn.execute(\"\"\"\n        MATCH (p:Person)-[w:WORKS_ON]->(proj:Project)\n        RETURN p.name AS person, proj.name AS project, w.since AS since\n    \"\"\").to_df()\n    print(df)\n",
+      "needs": [
+        "pandas",
+        "pyarrow"
+      ]
+    },
+    {
+      "lesson": "1-install-relate-for-python",
+      "title": "Lesson 1: Install Relate for Python",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python table.py",
+      "body": "python table.py\n",
+      "expect": "  person project  since\n0  Oskar  relate   2024\n",
+      "needs": [
+        "pandas",
+        "pyarrow"
+      ],
+      "source": "lesson"
+    },
+    {
+      "lesson": "2-run-your-first-query",
+      "title": "Challenge 2: Run Your First Query",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: import relate",
+      "body": "import relate\n\nconn = relate.connect(\":memory:\")\nconn.execute(\"\"\"\nCREATE (:Person {name: 'Oskar'})\n  -[:WORKS_ON {since: 2024}]->(:Project {name: 'relate'})\n\"\"\")\n",
+      "expect": null
+    },
+    {
+      "lesson": "2-run-your-first-query",
+      "title": "Challenge 2: Run Your First Query",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: row = conn.execute(\"\"\"",
+      "body": "row = conn.execute(\"\"\"\nMATCH (p:Person)-[w:WORKS_ON]->(:Project)\nRETURN valueType(p.name) AS nameType,\n  valueType(w.since) AS sinceType\n\"\"\").single()\nrow[\"nameType\"], row[\"sinceType\"]\n",
+      "expect": "('STRING NOT NULL', 'INTEGER NOT NULL')\n",
+      "source": "recorded"
+    },
+    {
+      "lesson": "2-run-your-first-query",
+      "title": "Challenge 2: Run Your First Query",
+      "dir": "lessons",
+      "kind": "repl",
+      "label": "prompt: as_number = conn.execute(\"RETURN valueType($year) AS type\", ",
+      "body": "as_number = conn.execute(\"RETURN valueType($year) AS type\", {\"year\": 2024}).single()[\"type\"]\nas_text = conn.execute(\"RETURN valueType($year) AS type\", {\"year\": \"2024\"}).single()[\"type\"]\nas_number, as_text\n",
+      "expect": "('INTEGER NOT NULL', 'STRING NOT NULL')\n",
+      "source": "recorded"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "seed.py",
+      "label": "seed.py",
+      "body": "import relate\n\npeople = [\n    {\"name\": \"Oskar\", \"role\": \"engineer\"},\n    {\"name\": \"Michael\", \"role\": \"engineer\"},\n    {\"name\": \"Will\", \"role\": \"maintainer\"},\n]\n\nwith relate.connect(\"./team.rl\") as conn:\n    cursor = conn.execute(\n        \"\"\"\n        UNWIND $people AS person\n        MERGE (p:Person {name: person.name})\n        SET p.role = person.role\n        \"\"\",\n        {\"people\": people},\n    )\n    print(cursor.stats[\"nodes_created\"], \"people created\")\n"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python seed.py",
+      "body": "python seed.py\n",
+      "expect": "3 people created\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "cat > people.cypher <<'EOF'",
+      "body": "cat > people.cypher <<'EOF'\nMERGE (o:Person {name: 'Oskar'}) SET o.role = 'engineer';\nMERGE (m:Person {name: 'Michael'}) SET m.role = 'engineer';\nMERGE (w:Person {name: 'Will'}) SET w.role = 'maintainer';\nEOF\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "run_script.py",
+      "label": "run_script.py",
+      "body": "from pathlib import Path\n\nimport relate\n\nscript = Path(\"people.cypher\").read_text()\nstatements = [part.strip() for part in script.split(\";\") if part.strip()]\n\nwith relate.connect(\"./team.rl\") as conn:\n    for statement in statements:\n        conn.execute(statement)\n    print(len(statements), \"statements run\")\n"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python run_script.py",
+      "body": "python run_script.py\n",
+      "expect": "3 statements run\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python seed.py",
+      "body": "python seed.py\n",
+      "expect": "0 people created\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "mkdir -p import",
+      "body": "mkdir -p import\ncat > import/works_on.csv <<'EOF'\nperson,project,since\nOskar,relate,2024\nMichael,relate,2023\nWill,relate,2021\nEOF\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "load_csv.py",
+      "label": "load_csv.py",
+      "body": "import os\n\nimport relate\n\nLOAD_WORKS_ON = \"\"\"\nLOAD CSV WITH HEADERS FROM 'file:///works_on.csv' AS row\nMATCH (p:Person {name: row.person})\nMERGE (proj:Project {name: row.project})\nMERGE (p)-[w:WORKS_ON]->(proj)\nSET w.since = toInteger(row.since)\n\"\"\"\n\nos.environ[\"RELATE_LOAD_CSV_DIR\"] = \"./import\"\n\nwith relate.connect(\"./team.rl\") as conn:\n    cursor = conn.execute(LOAD_WORKS_ON)\n    print(cursor.stats[\"relationships_created\"], \"relationships created\")\n"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python load_csv.py",
+      "body": "python load_csv.py\n",
+      "expect": "3 relationships created\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "load_rows.py",
+      "label": "load_rows.py",
+      "body": "import csv\n\nimport relate\n\nwith open(\"import/works_on.csv\", newline=\"\") as file:\n    rows = list(csv.DictReader(file))\n\nwith relate.connect(\"./team.rl\") as conn:\n    cursor = conn.execute(\n        \"\"\"\n        UNWIND $rows AS row\n        MATCH (p:Person {name: row.person})\n        MERGE (proj:Project {name: row.project})\n        MERGE (p)-[w:WORKS_ON]->(proj)\n        SET w.since = toInteger(row.since)\n        \"\"\",\n        {\"rows\": rows},\n    )\n    print(len(rows), \"rows read,\", cursor.stats[\"relationships_created\"], \"relationships created\")\n"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python load_rows.py",
+      "body": "python load_rows.py\n",
+      "expect": "3 rows read, 0 relationships created\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "make_parquet.py",
+      "label": "make_parquet.py",
+      "body": "from pathlib import Path\n\nimport pandas as pd\n\nPath(\"data\").mkdir(exist_ok=True)\npd.DataFrame(\n    [\n        {\"name\": \"Oskar\", \"role\": \"engineer\"},\n        {\"name\": \"Michael\", \"role\": \"engineer\"},\n        {\"name\": \"Will\", \"role\": \"maintainer\"},\n    ]\n).to_parquet(\"data/people.parquet\")\n",
+      "needs": [
+        "pandas",
+        "pyarrow"
+      ]
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python make_parquet.py",
+      "body": "python make_parquet.py\n",
+      "expect": "",
+      "needs": [
+        "pandas",
+        "pyarrow"
+      ],
+      "source": "recorded"
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "load_parquet.py",
+      "label": "load_parquet.py",
+      "body": "import pandas as pd\n\nimport relate\n\npeople = pd.read_parquet(\"data/people.parquet\").to_dict(\"records\")\n\nwith relate.connect(\"./team.rl\") as conn:\n    cursor = conn.execute(\n        \"\"\"\n        UNWIND $people AS person\n        MERGE (p:Person {name: person.name})\n        SET p.role = person.role\n        \"\"\",\n        {\"people\": people},\n    )\n    print(len(people), \"rows read,\", cursor.stats[\"nodes_created\"], \"people created\")\n",
+      "needs": [
+        "pandas",
+        "pyarrow"
+      ]
+    },
+    {
+      "lesson": "3-seed-data-from-different-sources",
+      "title": "Lesson 3: Seed Data From Different Sources",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python load_parquet.py",
+      "body": "python load_parquet.py\n",
+      "expect": "3 rows read, 0 people created\n",
+      "needs": [
+        "pandas",
+        "pyarrow"
+      ],
+      "source": "lesson"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "write.py",
+      "label": "write.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\") as conn:\n    cursor = conn.execute(\n        \"MERGE (p:Person {name: 'Andreas'}) SET p.role = 'designer'\"\n    )\n    print(\"nodes created:\", cursor.stats[\"nodes_created\"])\n    print(\"properties set:\", cursor.stats[\"properties_set\"])\n"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python write.py",
+      "body": "python write.py\n",
+      "expect": "nodes created: 1\nproperties set: 2\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "read.py",
+      "label": "read.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    cursor = conn.execute(\n        \"MATCH (p:Person) RETURN p.name AS person, p.role AS role\"\n    )\n    for row in cursor:\n        print(row[\"person\"], row[\"role\"])\n"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python read.py",
+      "body": "python read.py\n",
+      "expect": "Oskar engineer\nMichael engineer\nWill maintainer\nAndreas designer\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "role.py",
+      "label": "role.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    row = conn.execute(\n        \"MATCH (p:Person {name: $name}) RETURN p.role AS role\",\n        {\"name\": \"Will\"},\n    ).fetchone()\n    print(row[\"role\"] if row else \"no such person\")\n"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python role.py",
+      "body": "python role.py\n",
+      "expect": "maintainer\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "errors.py",
+      "label": "errors.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    try:\n        conn.execute(\"MATCH (p:Person {name: $name}) RETURN p.role AS role\")\n    except relate.Error as error:\n        print(type(error).__name__)\n        print(error.gql_status)\n        print(error)\n"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python errors.py",
+      "body": "python errors.py\n",
+      "expect": "ProgrammingError\n42N02\nsemantic error: ParameterMissing: Expected parameter(s): name\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "transaction.py",
+      "label": "transaction.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\") as conn:\n    conn.autocommit = False\n\n    conn.execute(\"MERGE (:Person {name: 'Draft'})\")\n    conn.rollback()\n\n    count = conn.execute(\n        \"MATCH (p:Person {name: 'Draft'}) RETURN count(p) AS people\"\n    ).single()[\"people\"]\n    print(\"people named Draft:\", count)\n"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python transaction.py",
+      "body": "python transaction.py\n",
+      "expect": "people named Draft: 0\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "file",
+      "name": "inspect_db.py",
+      "label": "inspect_db.py",
+      "body": "import relate\n\ndb = relate.Database(\"./team.rl\", read_only=True)\nprint(\"nodes:\", db.node_count())\nprint(\"relationships:\", db.relationship_count())\nprint(\"labels:\", db.labels())\nprint(\"relationship types:\", db.relationship_types())\ndb.close()\n"
+    },
+    {
+      "lesson": "4-write-and-read-data",
+      "title": "Lesson 4: Write and Read Data",
+      "dir": "lessons",
+      "kind": "bash",
+      "label": "python inspect_db.py",
+      "body": "python inspect_db.py\n",
+      "expect": "nodes: 5\nrelationships: 3\nlabels: ['Person', 'Project']\nrelationship types: ['WORKS_ON']\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "mkdir -p import",
+      "body": "mkdir -p import\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "seed.py",
+      "label": "seed.py",
+      "body": "import relate\n\npeople = [\n    {\"name\": \"Oskar\", \"role\": \"engineer\"},\n    {\"name\": \"Michael\", \"role\": \"engineer\"},\n    {\"name\": \"Will\", \"role\": \"maintainer\"},\n]\n\nwith relate.connect(\"./team.rl\") as conn:\n    cursor = conn.execute(\n        \"\"\"\n        UNWIND $people AS person\n        MERGE (p:Person {name: person.name})\n        SET p.role = person.role\n        \"\"\",\n        {\"people\": people},\n    )\n    print(cursor.stats[\"nodes_created\"], \"people created\")\n"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "cat > import/contributions.csv <<'EOF'",
+      "body": "cat > import/contributions.csv <<'EOF'\ncontributor,repo,year,language\nOskar,relate,2024,Rust\nMichael,relate,2023,Rust\nMichael,relate,2023,Rust\nWill,relate,2021,Rust\nMichael,opencypher-tck,2022,Gherkin\nMichaell,relate,2020,Rust\nEOF\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python seed.py",
+      "body": "python seed.py\n",
+      "expect": "3 people created\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "load.py",
+      "label": "load.py",
+      "body": "import os\n\nimport relate\n\nLOAD_CONTRIBUTIONS = \"\"\"\nLOAD CSV WITH HEADERS FROM 'file:///contributions.csv' AS row\nMATCH (p:Person {name: row.contributor})\nMERGE (proj:Project {name: row.repo})\nSET proj.language = row.language\nMERGE (p)-[w:WORKS_ON]->(proj)\nSET w.since = toInteger(row.year)\n\"\"\"\n\nos.environ[\"RELATE_LOAD_CSV_DIR\"] = \"./import\"\n\nwith relate.connect(\"./team.rl\") as conn:\n    conn.execute(LOAD_CONTRIBUTIONS)\n"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python load.py",
+      "body": "python load.py\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "count.py",
+      "label": "count.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    relationships = conn.execute(\n        \"MATCH ()-[w:WORKS_ON]->() RETURN count(w) AS relationships\"\n    ).single()[\"relationships\"]\n\n    people = conn.execute(\n        \"\"\"\n        MATCH (p:Person)-[:WORKS_ON]->(:Project {name: $project})\n        RETURN count(p) AS people\n        \"\"\",\n        {\"project\": \"relate\"},\n    ).single()[\"people\"]\n\n    print(\"relationships:\", relationships)\n    print(\"people:\", people)\n"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python count.py",
+      "body": "python count.py\n",
+      "expect": "relationships: 4\npeople: 3\n",
+      "source": "recorded"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "missing.py",
+      "label": "missing.py",
+      "body": "import csv\n\nimport relate\n\nwith open(\"import/contributions.csv\", newline=\"\") as file:\n    names = sorted({row[\"contributor\"] for row in csv.DictReader(file)})\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    cursor = conn.execute(\n        \"\"\"\n        UNWIND $names AS name\n        OPTIONAL MATCH (p:Person {name: name})\n        WITH name, p WHERE p IS NULL\n        RETURN name\n        \"\"\",\n        {\"names\": names},\n    )\n    for row in cursor:\n        print(\"not in the graph:\", row[\"name\"])\n"
+    },
+    {
+      "lesson": "5-load-a-graph-from-two-sources",
+      "title": "Challenge 5: Load a Graph From Two Sources",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python missing.py",
+      "body": "python missing.py\n",
+      "expect": "not in the graph: Michaell\n",
+      "source": "recorded"
+    },
+    {
+      "lesson": "6-write-and-read-with-an-agent",
+      "title": "Lesson 6: Write and Read With an Agent",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python -c \"import relate, pathlib; print(pathlib.Path(relate.__file__)",
+      "body": "python -c \"import relate, pathlib; print(pathlib.Path(relate.__file__).parent / '.agents' / 'skills' / 'relate')\"\n",
+      "expect": null
+    },
+    {
+      "lesson": "6-write-and-read-with-an-agent",
+      "title": "Lesson 6: Write and Read With an Agent",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "mkdir -p .claude/skills",
+      "body": "mkdir -p .claude/skills\ncp -r \"$(python -c \"import relate, pathlib; print(pathlib.Path(relate.__file__).parent / '.agents' / 'skills' / 'relate')\")\" .claude/skills/relate\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "6-write-and-read-with-an-agent",
+      "title": "Lesson 6: Write and Read With an Agent",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "relate_tool.py",
+      "label": "relate_tool.py",
+      "body": "import json\n\nimport relate\n\n\ndef run_cypher(query, params=None, *, database=\"./team.rl\", read_only=True, max_rows=100):\n    \"\"\"Run one Cypher statement and return a result an agent can parse.\"\"\"\n    try:\n        with relate.connect(database, read_only=read_only) as conn:\n            cursor = conn.execute(query, params)\n            rows = cursor.fetch(max_rows)\n            return {\n                \"columns\": cursor.columns,\n                \"rows\": [row.to_dict() for row in rows],\n                \"truncated\": len(cursor) > max_rows,\n            }\n    except relate.Error as error:\n        return {\n            \"error\": {\n                \"type\": type(error).__name__,\n                \"gql_status\": error.gql_status,\n                \"retryable\": bool(error.retryable),\n                \"message\": str(error),\n            }\n        }\n\n\nif __name__ == \"__main__\":\n    result = run_cypher(\n        \"MATCH (p:Person) RETURN p.name AS person, p.role AS role ORDER BY person\",\n        max_rows=2,\n    )\n    print(json.dumps(result, indent=2, default=str))\n"
+    },
+    {
+      "lesson": "6-write-and-read-with-an-agent",
+      "title": "Lesson 6: Write and Read With an Agent",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python relate_tool.py",
+      "body": "python relate_tool.py\n",
+      "expect": "{\n  \"columns\": [\n    \"person\",\n    \"role\"\n  ],\n  \"rows\": [\n    {\n      \"person\": \"Michael\",\n      \"role\": \"engineer\"\n    },\n    {\n      \"person\": \"Oskar\",\n      \"role\": \"engineer\"\n    }\n  ],\n  \"truncated\": true\n}\n",
+      "source": "lesson"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "add_project.py",
+      "label": "add_project.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\") as conn:\n    cursor = conn.execute(\"MERGE (:Project {name: 'Neo4j'})\")\n    print(\"projects created:\", cursor.stats[\"nodes_created\"])\n"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python add_project.py",
+      "body": "python add_project.py\n",
+      "expect": "projects created: 1\n",
+      "source": "recorded"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "check.py",
+      "label": "check.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    projects = conn.execute(\n        \"MATCH (proj:Project {name: $name}) RETURN count(proj) AS projects\",\n        {\"name\": \"Neo4j\"},\n    ).single()[\"projects\"]\n    print(\"projects named Neo4j:\", projects)\n"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python check.py",
+      "body": "python check.py\n",
+      "expect": "projects named Neo4j: 1\n",
+      "source": "recorded"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "add_person.py",
+      "label": "add_person.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\") as conn:\n    conn.execute(\n        \"\"\"\n        MERGE (p:Person {name: $name}) SET p.role = $role\n        MERGE (proj:Project {name: $project})\n        MERGE (p)-[w:WORKS_ON]->(proj) SET w.since = $since\n        \"\"\",\n        {\"name\": \"Emil\", \"role\": \"engineer\", \"project\": \"Neo4j\", \"since\": 2007},\n    )\n"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python add_person.py",
+      "body": "python add_person.py\n",
+      "expect": "",
+      "source": "recorded"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "team.py",
+      "label": "team.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    cursor = conn.execute(\"\"\"\n        MATCH (p:Person)-[w:WORKS_ON]->(proj:Project)\n        RETURN p.name AS person, proj.name AS project, w.since AS since\n        ORDER BY since\n    \"\"\")\n    for row in cursor:\n        print(row[\"person\"], row[\"project\"], row[\"since\"])\n"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python team.py",
+      "body": "python team.py\n",
+      "expect": "Emil Neo4j 2007\nWill relate 2021\nMichael opencypher-tck 2022\nMichael relate 2023\nOskar relate 2024\n",
+      "source": "recorded"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "file",
+      "name": "refused.py",
+      "label": "refused.py",
+      "body": "import relate\n\nwith relate.connect(\"./team.rl\", read_only=True) as conn:\n    try:\n        conn.execute(\"MERGE (:Person {name: 'Test'})\")\n    except relate.Error as error:\n        print(type(error).__name__)\n        print(error.gql_status)\n        print(error.retryable)\n"
+    },
+    {
+      "lesson": "7-add-data-then-ask-questions",
+      "title": "Lesson 7: Add Data, Then Ask Questions",
+      "dir": "challenge",
+      "kind": "bash",
+      "label": "python refused.py",
+      "body": "python refused.py\n",
+      "expect": "OperationalError\n42N18\nFalse\n",
+      "source": "lesson"
+    }
+  ]
+}

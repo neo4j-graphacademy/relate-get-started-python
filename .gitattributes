@@ -1,0 +1,4 @@
+# Scripts must keep LF endings or they fail inside the container.
+* text=auto eol=lf
+*.rl binary
+*.parquet binary

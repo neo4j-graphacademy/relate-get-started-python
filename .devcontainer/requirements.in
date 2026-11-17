@@ -1,0 +1,3 @@
+# Top-level packages for the lab. Edit this file, then regenerate requirements.txt.
+# See INSTRUCTOR_GUIDE.md.
+relate-db[pandas,arrow]==1.0.1
