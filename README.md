@@ -4,7 +4,7 @@ This is the hands-on environment for the course **Get Started with Relate in Pyt
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/neo4j-graphacademy/relate-get-started-python?quickstart=1)
 
-The lessons are at [COURSE_URL](https://graphacademy.neo4j.com/courses/relate-get-started-python). Keep them open in one tab and this Codespace in another.
+The lessons are at [Get Started with Relate in Python](https://graphacademy.neo4j.com/courses/relate-get-started-python). Keep them open in one tab and this Codespace in another.
 
 ## What you need
 
